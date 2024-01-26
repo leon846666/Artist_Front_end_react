@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../static/cdList.css';
 
 const apiUrl = 'http://localhost:8087/music/';
@@ -12,17 +12,45 @@ const CDList = () => {
     const [sortKey, setSortKey] = useState('title');
     const [sortOrder, setSortOrder] = useState('asc');
     const [currentPage, setCurrentPage] = useState(1);
-    const history = useHistory();
+    const [artistInfo, setArtistInfo] = useState({});
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetch(`${apiUrl}cds`)
             .then(response => response.json())
             .then(data => {
-                setCDList(data);
-                setFilteredCdList(data);
+                setCDList(data._embedded.cds);
+                setFilteredCdList(data._embedded.cds);
+                data._embedded.cds.forEach(cd => {
+                    if (cd._links.artist) {
+                        console.log(cd._links.artist)
+                        fetchArtistInfo(cd._links.artist.href);
+                    }
+                })
             })
             .catch(error => console.error('Fetch error:', error));
     }, []);
+
+    // function to get the artist info
+    const fetchArtistInfo = (url) => {
+        url = url.replace(/\{\?projection\}/g, "");
+
+        fetch(`${url}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(artistData => {
+                console.log(artistData)
+                setArtistInfo(prevArtistInfo => ({
+                    ...prevArtistInfo,
+                    [url]: artistData
+                }));
+            })
+            .catch(error => console.error('Fetch artist error:', error));
+    };
 
     const handleFilterChange = (e) => {
         setFilter(e.target.value);
@@ -30,17 +58,19 @@ const CDList = () => {
 
     const handleFilter = () => {
         const lowercasedFilter = filter.toLowerCase();
-        const filteredData = cdList.filter(cd =>
-            cd.title.toLowerCase().includes(lowercasedFilter) ||
-            cd.artist.toLowerCase().includes(lowercasedFilter) ||
-            cd.releaseYear.toString().includes(filter)
-        );
+        const filteredData = cdList.filter(item => {
+            return (
+                item.title?.toLowerCase().includes(lowercasedFilter) ||
+                artistInfo[item._links.artist.href.replace(/\{\?projection\}/g, "")]?.name?.toLowerCase().includes(lowercasedFilter) ||
+                item.releaseYear?.toString().includes(filter)
+            )
+        });
         setFilteredCdList(filteredData);
         setCurrentPage(1);
     };
 
-    const handleCdClick = (title) => {
-        history.push(`/cd/${title}`);
+    const handleCdClick = (item) => {
+        navigate(`/cd/${item.title}`, { state: item });
     };
 
     const handleSort = (key) => {
@@ -81,19 +111,21 @@ const CDList = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {paginatedCDList.map(cd => (
-                        <tr key={cd.id} onClick={() => handleCdClick(cd.title)}>
-                            <td>{cd.title}</td>
-                            <td>{cd.artist}</td>
-                            <td>{cd.releaseYear}</td>
-                        </tr>
+                    {paginatedCDList.map((cd, i) => (
+                        <React.Fragment key={i}>
+                            <tr onClick={() => handleCdClick(cd)}>
+                                <td>{cd.title}</td>
+                                <td>{artistInfo[cd._links.artist.href.replace(/\{\?projection\}/g, "")]?.name || 'Loading...'}</td>
+                                <td>{cd.releaseYear}</td>
+                            </tr>
+                        </React.Fragment>
                     ))}
                 </tbody>
             </table>
             <div className="pagination">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNumber => (
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber, i) => (
                     <button
-                        key={pageNumber}
+                        key={i}
                         onClick={() => changePage(pageNumber)}
                         disabled={currentPage === pageNumber}
                     >
@@ -101,7 +133,7 @@ const CDList = () => {
                     </button>
                 ))}
             </div>
-        </div>
+        </div >
     );
 };
 

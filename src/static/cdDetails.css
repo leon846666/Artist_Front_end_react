@@ -1,0 +1,45 @@
+.cdDetailsContainer {
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.backButton {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.backButton:hover {
+    background-color: #0056b3;
+}
+
+.cdTitle {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.trackList {
+    list-style: none;
+    padding-left: 0;
+}
+
+.trackSubtitle {
+    color: #666;
+    font-size: 1.2em;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.trackItem {
+    padding: 5px 10px;
+    background-color: #efefef;
+    margin-bottom: 5px;
+    border-radius: 5px;
+}
